@@ -1,0 +1,42 @@
+<?php
+
+namespace RocketLauncherHooksExtractor\Tests\Unit\inc\Services\Extractor;
+
+use Mockery;
+use RocketLauncherHooksExtractor\Services\Extractor;
+use League\Flysystem\Filesystem;
+
+
+use RocketLauncherHooksExtractor\Tests\Unit\TestCase;
+
+/**
+ * @covers \RocketLauncherHooksExtractor\Services\Extractor::parse_docblock
+ */
+class Test_parseDocblock extends TestCase {
+
+    /**
+     * @var Filesystem
+     */
+    protected $filesystem;
+
+    /**
+     * @var Extractor
+     */
+    protected $extractor;
+
+    public function set_up() {
+        parent::set_up();
+        $this->filesystem = Mockery::mock(Filesystem::class);
+
+        $this->extractor = new Extractor($this->filesystem);
+    }
+
+    /**
+     * @dataProvider configTestData
+     */
+    public function testShouldReturnAsExpected( $config, $expected )
+    {
+        $this->assertSame($expected, $this->extractor->parse_docblock($config['content']));
+
+    }
+}

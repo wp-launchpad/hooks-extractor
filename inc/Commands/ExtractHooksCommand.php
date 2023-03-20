@@ -1,7 +1,9 @@
 <?php
 
 namespace RocketLauncherHooksExtractor\Commands;
-class ExtractHooksCommand
+use RocketLauncherBuilder\Commands\Command;
+
+class ExtractHooksCommand extends Command
 {
 
 }
