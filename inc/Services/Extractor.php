@@ -2,6 +2,8 @@
 
 namespace RocketLauncherHooksExtractor\Services;
 
+use Jasny\PhpdocParser\PhpdocParser;
+use Jasny\PhpdocParser\Set\PhpDocumentor;
 use League\Flysystem\Filesystem;
 use RocketLauncherHooksExtractor\ObjectValues\Folder;
 
@@ -45,7 +47,8 @@ class Extractor
     }
 
     public function extract_actions(string $content): array {
-        if(! preg_match_all('', $content, $results)) {
+        $extracts = [];
+        if(! preg_match_all('#(?<docblock>/\*(?:[^*]|\n|(?:\*(?:[^/]|\n)))*\*/)?do_action\(\s*[\'"](?<action>[^\'"]*)[\'"]\s*\)#', $content, $results)) {
             return [];
         }
 
@@ -53,16 +56,47 @@ class Extractor
         $docblocks = $results['docblock'];
 
         foreach ($actions as $index => $action) {
+            $extract = [
+                'type' => 'action',
+                'name' => $action,
+            ];
+
             $docblock = $docblocks[$index];
             $docblock = $this->parse_docblock($docblock);
+
+            $extracts[] = array_merge( $extract, $docblock );
         }
+
+        return $extracts;
     }
 
     public function extract_filters(string $content): array {
+        $extracts = [];
+        if(! preg_match_all('#(?<docblock>/\*(?:[^*]|\n|(?:\*(?:[^/]|\n)))*\*/)?apply_filters\(\s*[\'"](?<filter>[^\'"]*)[\'"]\s*\)#', $content, $results)) {
+            return [];
+        }
 
+        $filters = $results['filter'];
+        $docblocks = $results['docblock'];
+
+        foreach ($filters as $index => $filter) {
+            $extract = [
+                'type' => 'filter',
+                'name' => $filter,
+            ];
+
+            $docblock = $docblocks[$index];
+            $docblock = $this->parse_docblock($docblock);
+
+            $extracts[] = array_merge( $extract, $docblock );
+        }
+
+        return $extracts;
     }
 
     public function parse_docblock(string $content): array {
-
+        $tags = PhpDocumentor::tags();
+        $parser = new PHPDocParser($tags);
+        return $parser->parse($content);
     }
 }
