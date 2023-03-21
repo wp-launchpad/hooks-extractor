@@ -1,0 +1,9 @@
+includes:
+  - inc
+
+excludes:
+  - inc/Dependencies
+  - inc/classes
+
+prefix:
+  - rocketlauncher
