@@ -7,20 +7,30 @@ use RocketLauncherHooksExtractor\ObjectValues\Path;
 
 class OutputWriter
 {
-    /**
-     * @var Filesystem
-     */
-    protected $filesystem;
+    public function write_output(array $hooks, Path $output = null, Path $input = null): void {
+        if($input) {
+            $output_content = $this->initialize_output($input);
+        }else {
+            $output_content = [
 
-    /**
-     * @param Filesystem $filesystem
-     */
-    public function __construct(Filesystem $filesystem)
-    {
-        $this->filesystem = $filesystem;
+            ];
+        }
+
+        if( key_exists('hooks', $hooks) ) {
+            $hooks['hooks'] = array_merge($hooks['hooks'], $hooks);
+        } else {
+            $hooks['hooks'] = $hooks;
+        }
+
+        $output_file = $output ? $output->get_value() : 'hooks-output.yml';
+        yaml_emit($output_file, $output_content);
     }
 
-    public function write_output(array $hooks, Path $output = null, Path $input = null): void {
-
+    protected function initialize_output(Path $path) {
+        $content = yaml_parse_file($path->get_value());
+        if(! $content) {
+            return [];
+        }
+        return $content;
     }
 }
