@@ -28,20 +28,22 @@ class Extractor
      */
     public function extract(Configuration $configuration): array {
         $hooks = [];
-        $contents = $this->filesystem->listContents($folder->get_value(), true);
-        foreach ($contents as $content) {
-            if($content['type'] === 'dir') {
-                continue;
+        foreach ($configuration->getFolders() as $folder) {
+            $contents = $this->filesystem->listContents($folder->get_value(), true);
+            foreach ($contents as $content) {
+                if($content['type'] === 'dir') {
+                    continue;
+                }
+
+                if($content['type'] !== 'file' || $content['extension'] !== 'php') {
+                    continue;
+                }
+
+                $content_file = $this->filesystem->read($content['path']);
+
+                $hooks[] = $this->extract_actions($content_file);
+                $hooks[] = $this->extract_filters($content_file);
             }
-
-            if($content['type'] !== 'file' || $content['extension'] !== 'php') {
-                continue;
-            }
-
-            $content_file = $this->filesystem->read($content['path']);
-
-            $hooks[] = $this->extract_actions($content_file);
-            $hooks[] = $this->extract_filters($content_file);
         }
 
         return $hooks;
