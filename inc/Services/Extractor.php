@@ -5,6 +5,7 @@ namespace RocketLauncherHooksExtractor\Services;
 use Jasny\PhpdocParser\PhpdocParser;
 use Jasny\PhpdocParser\Set\PhpDocumentor;
 use League\Flysystem\Filesystem;
+use RocketLauncherHooksExtractor\Entities\Configuration;
 use RocketLauncherHooksExtractor\ObjectValues\Folder;
 
 class Extractor
@@ -25,7 +26,7 @@ class Extractor
     /**
      * @return array
      */
-    public function extract(Folder $folder, array $exclusions): array {
+    public function extract(Configuration $configuration): array {
         $hooks = [];
         $contents = $this->filesystem->listContents($folder->get_value(), true);
         foreach ($contents as $content) {

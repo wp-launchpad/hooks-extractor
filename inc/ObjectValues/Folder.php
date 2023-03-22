@@ -2,7 +2,7 @@
 
 namespace RocketLauncherHooksExtractor\ObjectValues;
 
-class Folder
+class Folder implements Content
 {
     /**
      * @var string
@@ -10,9 +10,17 @@ class Folder
     protected $value;
 
     /**
+     * @param string $value
+     */
+    public function __construct(string $value)
+    {
+        $this->value = $value;
+    }
+
+    /**
      * @return string
      */
-    public function get_value()
+    public function get_value(): string
     {
         return $this->value;
     }

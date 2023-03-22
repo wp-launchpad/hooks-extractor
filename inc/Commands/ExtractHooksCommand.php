@@ -4,7 +4,9 @@ namespace RocketLauncherHooksExtractor\Commands;
 use RocketLauncherBuilder\Commands\Command;
 use RocketLauncherHooksExtractor\ObjectValues\InvalidValue;
 use RocketLauncherHooksExtractor\ObjectValues\Path;
+use RocketLauncherHooksExtractor\Services\ConfigurationLoader;
 use RocketLauncherHooksExtractor\Services\Extractor;
+use RocketLauncherHooksExtractor\Services\OutputWriter;
 
 class ExtractHooksCommand extends Command
 {
@@ -13,11 +15,24 @@ class ExtractHooksCommand extends Command
      */
     protected $extractor;
 
-    public function __construct(Extractor $extractor)
+    /**
+     * @var ConfigurationLoader
+     */
+    protected $configuration_loader;
+
+    /**
+     * @var OutputWriter
+     */
+    protected $output_writer;
+
+    public function __construct(Extractor $extractor, ConfigurationLoader $configuration_loader, OutputWriter $output_writer)
     {
         parent::__construct('hook:extract', 'Extract hooks');
 
         $this->extractor = $extractor;
+        $this->configuration_loader = $configuration_loader;
+
+        $this->output_writer = $output_writer;
 
         $this
             ->option('-i --input', 'Path to an existing file to take as input')
@@ -45,11 +60,11 @@ class ExtractHooksCommand extends Command
             return;
         }
 
-        $existing = yaml_parse_file($input);
+        $configurations = $this->configuration_loader->load($configurations);
 
-        $extracted_hooks = $this->extractor->extract();
+        $extracted_hooks = $this->extractor->extract($configurations);
 
-
+        $this->output_writer->write_output($extracted_hooks, $output, $input);
     }
 
     protected function validate_param($input, string $message) {
