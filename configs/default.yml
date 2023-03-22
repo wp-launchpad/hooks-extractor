@@ -3,7 +3,12 @@ includes:
 
 excludes:
   - inc/Dependencies
-  - inc/classes
+  - inc/classes/dependencies
 
-prefix:
-  - rocketlauncher
+
+
+hooks:
+  excluded:
+    - warpdrive_domain_flush
+  prefix:
+    - rocketlauncher

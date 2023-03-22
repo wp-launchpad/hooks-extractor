@@ -17,13 +17,17 @@ class OutputWriter
         }
 
         if( key_exists('hooks', $hooks) ) {
-            $hooks['hooks'] = array_merge($hooks['hooks'], $hooks);
+            $output_content['hooks'] = array_merge($hooks['hooks'], $hooks);
         } else {
-            $hooks['hooks'] = $hooks;
+            $output_content['hooks'] = $hooks;
         }
 
+        $output_content['hooks'] = array_values($this->unique_multidim_array($output_content['hooks'], 'name'));
+
         $output_file = $output ? $output->get_value() : 'hooks-output.yml';
-        yaml_emit($output_file, $output_content);
+        $yaml_content = yaml_emit($output_content);
+        echo $yaml_content;
+        yaml_emit_file($output_file, $output_content);
     }
 
     protected function initialize_output(Path $path) {
@@ -32,5 +36,36 @@ class OutputWriter
             return [];
         }
         return $content;
+    }
+
+    protected function unique_multidim_array($array, $key) {
+
+        $temp_array = array();
+
+        $i = 0;
+
+        $key_array = array();
+
+
+
+        foreach($array as $val) {
+
+            if (!in_array($val[$key], $key_array)) {
+
+                $key_array[$i] = $val[$key];
+
+                $temp_array[$i] = $val;
+                $i++;
+                continue;
+            }
+            $index = array_search($val[$key], $key_array);
+            if(count($val) > count($temp_array[$index])) {
+                $temp_array[$index] = $val;
+            }
+            $i ++;
+        }
+
+        return $temp_array;
+
     }
 }

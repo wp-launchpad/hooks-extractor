@@ -51,7 +51,7 @@ class ConfigurationLoader
     }
 
     protected function load_configs(Path $path) {
-        $configs = yaml_parse_file($path->get_value());
+        $configs = @yaml_parse_file($path->get_value());
         if(! $configs) {
             return null;
         }
@@ -76,15 +76,23 @@ class ConfigurationLoader
             $configurations->setExclusions($excludes);
         }
 
-        if( ! key_exists('prefix', $configs) ) {
+        if( key_exists('hooks', $configs) && key_exists('prefix', $configs['hooks']) ) {
+            $prefixes = array_map(function ($prefix) {
+                return new Prefix($prefix);
+            }, $configs['hooks']['prefix']);
+
+            $configurations->setPrefixes($prefixes);
+        }
+
+        if( ! key_exists('hooks', $configs) || ! key_exists('excluded', $configs['hooks'])) {
             return $configurations;
         }
 
-        $prefixes = array_map(function ($prefix) {
-            return new Prefix($prefix);
-        }, $configs['prefix']);
+        $excluded = array_map(function ($excluded) {
+            return new Prefix($excluded);
+        }, $configs['hooks']['excluded']);
 
-        $configurations->setPrefixes($prefixes);
+        $configurations->set_hook_excluded($excluded);
 
         return $configurations;
     }

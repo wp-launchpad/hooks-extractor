@@ -24,6 +24,11 @@ class Configuration
     protected $prefixes;
 
     /**
+     * @var Prefix[]
+     */
+    protected $hook_excluded;
+
+    /**
      * @return Folder[]
      */
     public function getFolders(): array
@@ -71,5 +76,20 @@ class Configuration
         $this->prefixes = $prefixes;
     }
 
+    /**
+     * @return Prefix[]
+     */
+    public function get_hook_excluded(): array
+    {
+        return $this->hook_excluded;
+    }
+
+    /**
+     * @param Prefix[] $hook_excluded
+     */
+    public function set_hook_excluded(array $hook_excluded): void
+    {
+        $this->hook_excluded = $hook_excluded;
+    }
 
 }
