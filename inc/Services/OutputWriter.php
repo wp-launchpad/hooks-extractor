@@ -59,9 +59,13 @@ class OutputWriter
                 continue;
             }
             $index = array_search($val[$key], $key_array);
+            $lines = array_merge( $temp_array[$index]['files'], $val['files']);
+
             if(count($val) > count($temp_array[$index])) {
                 $temp_array[$index] = $val;
             }
+
+            $temp_array[$index]['files'] = $lines;
             $i ++;
         }
 

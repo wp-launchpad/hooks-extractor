@@ -47,8 +47,8 @@ class Extractor
 
                 $content_file = $this->filesystem->read($content['path']);
 
-                $hooks = array_merge($hooks, $this->extract_actions($content_file));
-                $hooks = array_merge($hooks, $this->extract_filters($content_file));
+                $hooks = array_merge($hooks, $this->extract_actions($content_file, $content['path']));
+                $hooks = array_merge($hooks, $this->extract_filters($content_file, $content['path']));
             }
         }
 
@@ -64,32 +64,37 @@ class Extractor
         return false;
     }
 
-    public function extract_actions(string $content): array {
+    public function extract_actions(string $content, string $path): array {
         $extracts = [];
-        if(! preg_match_all('#(?<docblock>\/\*(?:[^*]|(?:\*[^\/]))*\*\/)?\s*do_action\s*\(\s*[\'"](?<action>[^\'"]*)[\'"](?:\s*,\s*\$[a-zA-Z_]\w*)*\s*\)#', $content, $results)) {
+        if(! preg_match_all('#(?<docblock>\/\*(?:[^*]|(?:\*[^\/]))*\*\/)?\s*do_action\s*\(\s*[\'"](?<action>[^\'"]*)[\'"][^\)]*\s*\)#', $content, $results, PREG_OFFSET_CAPTURE)) {
             return [];
         }
 
         $actions = $results['action'];
         $docblocks = $results['docblock'];
-
         foreach ($actions as $index => $action) {
             $extract = [
                 'type' => 'action',
-                'name' => $action,
+                'name' => $action[0],
+                'files' => [
+                    [
+                        'path' => $path,
+                        'line' => $this->find_line($action[1], $content),
+                    ]
+                ],
             ];
 
             $docblock = $docblocks[$index];
-            $docblock = $this->parse_docblock($docblock);
+            $docblock = $this->parse_docblock($docblock[0]);
             $extracts[] = array_merge( $extract, $docblock );
         }
 
         return $extracts;
     }
 
-    public function extract_filters(string $content): array {
+    public function extract_filters(string $content, string $path): array {
         $extracts = [];
-        if(! preg_match_all('#(?<docblock>\/\*(?:[^*]|(?:\*[^\/]))*\*\/)?\s*[\w\)\(=>\'"\$\h]*?apply_filters\s*\(\s*[\'"](?<filter>[^\'"]*)[\'"](?:\s*,\s*\$[a-zA-Z_]\w*)*\s*\)#', $content, $results)) {
+        if(! preg_match_all('#(?<docblock>\/\*(?:[^*]|(?:\*[^\/]))*\*\/)?\s*[\w\)\(!=>.\'"\$\h]*?apply_filters\s*\(\s*[\'"](?<filter>[^\'"]*)[\'"][^\)]*\s*\)#', $content, $results, PREG_OFFSET_CAPTURE)) {
             return [];
         }
 
@@ -99,11 +104,17 @@ class Extractor
         foreach ($filters as $index => $filter) {
             $extract = [
                 'type' => 'filter',
-                'name' => $filter,
+                'name' => $filter[0],
+                'files' => [
+                    [
+                        'path' => $path,
+                        'line' => $this->find_line($filter[1], $content),
+                    ]
+                ],
             ];
 
             $docblock = $docblocks[$index];
-            $docblock = $this->parse_docblock($docblock);
+            $docblock = $this->parse_docblock($docblock[0]);
             $extracts[] = array_merge( $extract, $docblock );
         }
 
@@ -132,5 +143,11 @@ class Extractor
                   }
                   return $hook;
         }));
+    }
+
+    protected function find_line(int $offset, string $content) {
+        list($before) = str_split($content, $offset); // fetches all the text before the match
+
+        return strlen($before) - strlen(str_replace("\n", "", $before)) + 1;
     }
 }
