@@ -46,7 +46,7 @@ abstract class TestCase extends VirtualFilesystemTestCase
         }
         $_SERVER['argv'] = $argv;
         AppBuilder::enable_test_mode();
-        AppBuilder::init(/*$this->rootVirtualUrl*/ __DIR__ . '/../../wp-content/plugins/wp-rocket', [
+        AppBuilder::init($this->rootVirtualUrl, [
             ServiceProvider::class,
         ]);
         unset($_SERVER['argv']);
