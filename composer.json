@@ -16,7 +16,8 @@
     "ext-json": "*",
     "composer/composer": "^2.5",
     "jasny/phpdoc-parser": "^1.0",
-    "ext-yaml": "*"
+    "ext-yaml": "*",
+    "microsoft/tolerant-php-parser": "^0.1.2"
   },
   "require-dev": {
     "phpunit/phpunit": "^7.5 || ^8 || ^9",

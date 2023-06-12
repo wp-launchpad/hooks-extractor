@@ -7,6 +7,8 @@ use Jasny\PhpdocParser\PhpdocParser;
 use Jasny\PhpdocParser\Set\PhpDocumentor;
 use Jasny\PhpdocParser\Tag\Summery;
 use League\Flysystem\Filesystem;
+use Microsoft\PhpParser\Node;
+use Microsoft\PhpParser\Parser;
 use RocketLauncherHooksExtractor\Entities\Configuration;
 use RocketLauncherHooksExtractor\ObjectValues\Folder;
 
@@ -18,11 +20,18 @@ class Extractor
     protected $filesystem;
 
     /**
-     * @param Filesystem $filesystem
+     * @var Parser
      */
-    public function __construct(Filesystem $filesystem)
+    protected $parser;
+
+    /**
+     * @param Filesystem $filesystem
+     * @param Parser $parser
+     */
+    public function __construct(Filesystem $filesystem, Parser $parser)
     {
         $this->filesystem = $filesystem;
+        $this->parser = $parser;
     }
 
     /**
@@ -47,6 +56,8 @@ class Extractor
 
                 $content_file = $this->filesystem->read($content['path']);
 
+                $token = $this->parser->parseSourceFile($content_file);
+
                 $hooks = array_merge($hooks, $this->extract_actions($content_file, $content['path']));
                 $hooks = array_merge($hooks, $this->extract_filters($content_file, $content['path']));
             }
@@ -64,57 +75,81 @@ class Extractor
         return false;
     }
 
-    public function extract_actions(string $content, string $path): array {
+    public function extract_actions(Node $node, string $path): array {
         $extracts = [];
-        if(! preg_match_all('#(?<docblock>\/\*(?:[^*]|(?:\*[^\/]))*\*\/)?\s*do_action\s*\(\s*[\'"](?<action>[^\'"]*)[\'"][^\)]*\s*\)#', $content, $results, PREG_OFFSET_CAPTURE)) {
-            return [];
+        $actions = [];
+        foreach ($node->getChildNodes() as $child_node) {
+            if (! $child_node instanceof Node\Expression\CallExpression || $child_node->getText() !== 'do_action') {
+                continue;
+            }
+
+            $actions []= $child_node;
         }
 
-        $actions = $results['action'];
-        $docblocks = $results['docblock'];
-        foreach ($actions as $index => $action) {
+        foreach ($actions as $action) {
+
+            $parameters = explode(',', $action->argumentExpressionList->getText());
+
+            if(count($parameters) === 0) {
+                continue;
+            }
+
+            $name = trim( trim(array_shift($parameters)), '\'"');
+
             $extract = [
                 'type' => 'action',
-                'name' => $action[0],
+                'name' => $name,
                 'files' => [
                     [
                         'path' => $path,
-                        'line' => $this->find_line($action[1], $content),
+                        'line' => $action->getStartPosition(),
                     ]
                 ],
             ];
 
-            $docblock = $docblocks[$index];
-            $docblock = $this->parse_docblock($docblock[0]);
+            $docblock = $this->get_doc_node($action);
+            $docblock = $this->parse_docblock($docblock);
             $extracts[] = array_merge( $extract, $docblock );
         }
 
         return $extracts;
     }
 
-    public function extract_filters(string $content, string $path): array {
+    public function extract_filters(Node $node, string $path): array {
         $extracts = [];
-        if(! preg_match_all('#(?<docblock>\/\*(?:[^*]|(?:\*[^\/]))*\*\/)?\s*[\w\)\(!=>.\'"\$\h]*?apply_filters\s*\(\s*[\'"](?<filter>[^\'"]*)[\'"][^\)]*\s*\)#', $content, $results, PREG_OFFSET_CAPTURE)) {
-            return [];
+        $filters = [];
+
+        foreach ($node->getChildNodes() as $child_node) {
+            if (! $child_node instanceof Node\Expression\CallExpression || $child_node->getText() !== 'apply_filters') {
+                continue;
+            }
+
+            $filters []= $child_node;
         }
 
-        $filters = $results['filter'];
-        $docblocks = $results['docblock'];
+        foreach ($filters as $filter) {
 
-        foreach ($filters as $index => $filter) {
+            $parameters = explode(',', $filter->argumentExpressionList->getText());
+
+            if(count($parameters) === 0) {
+                continue;
+            }
+
+            $name = trim( trim(array_shift($parameters)), '\'"');
+
             $extract = [
                 'type' => 'filter',
-                'name' => $filter[0],
+                'name' => $name,
                 'files' => [
                     [
                         'path' => $path,
-                        'line' => $this->find_line($filter[1], $content),
+                        'line' => $filter->getStartPosition(),
                     ]
                 ],
             ];
 
-            $docblock = $docblocks[$index];
-            $docblock = $this->parse_docblock($docblock[0]);
+            $docblock = $this->get_doc_node($filter);
+            $docblock = $this->parse_docblock($docblock);
             $extracts[] = array_merge( $extract, $docblock );
         }
 
@@ -149,5 +184,22 @@ class Extractor
         list($before) = str_split($content, $offset); // fetches all the text before the match
 
         return strlen($before) - strlen(str_replace("\n", "", $before)) + 1;
+    }
+
+    protected function get_doc_node(Node $node): string {
+        while ($node && ! $node instanceof ExpressionStatement) {
+
+            $children = $node->getChildNodes();
+            foreach ($children as $child) {
+                $doc = $child->getDocCommentText();
+                if($doc) {
+                    return $doc;
+                }
+            }
+
+            $node = $node->getParent();
+        }
+
+        return '';
     }
 }
