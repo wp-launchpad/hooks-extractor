@@ -8,6 +8,7 @@ use Jasny\PhpdocParser\Set\PhpDocumentor;
 use Jasny\PhpdocParser\Tag\Summery;
 use League\Flysystem\Filesystem;
 use Microsoft\PhpParser\Node;
+use Microsoft\PhpParser\Node\Statement\ExpressionStatement;
 use Microsoft\PhpParser\Parser;
 use RocketLauncherHooksExtractor\Entities\Configuration;
 use RocketLauncherHooksExtractor\ObjectValues\Folder;
